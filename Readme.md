@@ -1,7 +1,7 @@
 # Личный проект «Кэндишоп» [![Build status][travis-image]][travis-url]
 
 * Студент: [Александра Ларина](https://up.htmlacademy.ru/javascript/15/user/422049).
-* Наставник: `Неизвестно`.
+* Наставник: `Не имеется`.
 
 ---
 
