@@ -4,7 +4,7 @@
  * Количество карточек товаров на странице
  * @type {number}
  */
-var ITEMS_NUMBER = 26;
+var ITEMS_NUMBER = 6;
 /**
  * Количество товаров в корзине
  * @type {number}
@@ -180,10 +180,10 @@ var createCardContent = function (allContentsArray) {
  * @param {array} contentsArray
  * @return {object}
  */
-var createCard = function (pic, contentsArray) {
+var createCard = function () {
   return {
     name: cardsData.NAMES[getRandomIntFromRange(0, cardsData.NAMES.length)],
-    picture: 'img/cards/' + pic + '.jpg',
+    picture: 'img/cards/' + cardsData.IMG[getRandomIntFromRange(0, cardsData.IMG.length)] + '.jpg',
     amount: getRandomIntFromRange(AMOUNT.MIN, AMOUNT.MAX),
     price: getRandomIntFromRange(PRICE.MIN, PRICE.MAX),
     weight: getRandomIntFromRange(WEIGHT.MIN, WEIGHT.MAX),
@@ -194,7 +194,7 @@ var createCard = function (pic, contentsArray) {
     nutritionFacts: {
       sugar: cardsData.SUGAR[getRandomIntFromRange(0, cardsData.SUGAR.length)],
       energy: getRandomIntFromRange(ENERGY.MIN, ENERGY.MAX),
-      contents: createCardContent(contentsArray)
+      contents: createCardContent(cardsData.CONTENTS)
     }
   };
 };
@@ -207,9 +207,8 @@ var createCard = function (pic, contentsArray) {
 var createCardsArray = function (itemsNumber) {
   var itemsArray = [];
   for (var i = 0; i < itemsNumber; i++) {
-    itemsArray.push(createCard(cardsData.IMG[i], cardsData.CONTENTS));
+    itemsArray.push(createCard());
   }
-
   return itemsArray;
 };
 
@@ -251,7 +250,41 @@ var renderCard = function (card) {
   cardElement.querySelector('.card__characteristic').textContent = (card.nutritionFacts.sugar) ?
     'Содержит сахар' : 'Без сахара';
   cardElement.querySelector('.card__composition-list').textContent = card.nutritionFacts.contents;
+
+  var favButton = cardElement.querySelector('.card__btn-favorite');
+  favButton.addEventListener('click', function () {
+    favButton.classList.toggle('card__btn-favorite--selected');
+  });
+
+  var addToBasketButton = cardElement.querySelector('.card__btn');
+  addToBasketButton.addEventListener('click', function () {
+    addToBasketButton.href = '#basket';
+    addToBasketHandler(card);
+  });
+
   return cardElement;
+};
+
+var addToBasketHandler = function (card) {
+  var basket = document.querySelector('.goods__cards');
+  var orders = basket.querySelectorAll('article.card-order');
+  var cardForBasket = renderCardForBasket(card);
+  console.log('Title отрендеренной карточки: ' + cardForBasket.querySelector('.card-order__title').textContent);
+
+  if (orders.length !== 0) {
+    orders.forEach(function (it) {
+      var title = it.querySelector('.card-order__title').textContent;
+      console.log('Уже имеющиеся titles: ' + title);
+      if (title === card.name) {
+        it.querySelector('.card-order__count').value++;
+        return;
+      } else {
+        basket.appendChild(cardForBasket);
+      }
+    });
+  } else {
+    basket.appendChild(cardForBasket);
+  }
 };
 
 /**
@@ -281,7 +314,6 @@ var cardInBasketTemplate = document.querySelector('#card-order').content.querySe
  * Корзина
  * @type {Element}
  */
-var basket = document.querySelector('.goods__cards');
 /**
  * Заполняет шаблон карточки товара в корзине и возвращает ноду карточки
  * @param {object} card
@@ -298,15 +330,39 @@ var renderCardForBasket = function (card) {
  * Формируем массив нод-элементов карточек в корзине
  * @type {Array}
  */
-var cardInBasketArray = createCardsArray(ITEMS_IN_BASKET);
+// var cardInBasketArray = createCardsArray(ITEMS_IN_BASKET);
 /**
  * Добавляем массив нод-элементов карточек в корзине во фрагмент
  */
-for (var j = 0; j < ITEMS_IN_BASKET; j++) {
+/* for (var j = 0; j < ITEMS_IN_BASKET; j++) {
   fragment.appendChild(renderCardForBasket(cardInBasketArray[j]));
-}
+} */
 /**
  * Вставляем фрагмент в разметку корзины
  */
-basket.appendChild(fragment);
+// basket.appendChild(fragment);
 
+var courierDeliveryInput = document.querySelector('#deliver__courier');
+var selfDeliveryInput = document.querySelector('#deliver__store');
+var selfDeliveryBlock = document.querySelector('.deliver__store');
+var courierDeliveryBlock = document.querySelector('.deliver__courier');
+
+courierDeliveryInput.addEventListener('click', function () {
+  selfDeliveryBlock.classList.add('visually-hidden');
+  courierDeliveryBlock.classList.remove('visually-hidden');
+});
+selfDeliveryInput.addEventListener('click', function () {
+  courierDeliveryBlock.classList.add('visually-hidden');
+  selfDeliveryBlock.classList.remove('visually-hidden');
+});
+
+var leftRangeButton = document.querySelector('.range__btn--left');
+leftRangeButton.addEventListener('click', function () {
+  document.querySelector('.range__price--min').textContent = Math.floor(leftRangeButton.offsetLeft * 100 /
+    leftRangeButton.parentNode.offsetWidth);
+});
+var rightRangeButton = document.querySelector('.range__btn--right');
+rightRangeButton.addEventListener('click', function () {
+  document.querySelector('.range__price--max').textContent = Math.floor(rightRangeButton.offsetLeft * 100 /
+    rightRangeButton.parentNode.offsetWidth);
+});
