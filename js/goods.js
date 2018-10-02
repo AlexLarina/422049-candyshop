@@ -4,12 +4,7 @@
  * Количество карточек товаров на странице
  * @type {number}
  */
-var ITEMS_NUMBER = 26;
-/**
- * Количество товаров в корзине
- * @type {number}
- */
-var ITEMS_IN_BASKET = 3;
+var ITEMS_NUMBER = 6;
 /**
  * Данные для заполнения карточек товаров
  * @type {{NAMES: [string], IMG: [string], SUGAR: [boolean,boolean], CONTENTS: [string]}}
@@ -146,6 +141,15 @@ var ENERGY = {
   MIN: 70,
   MAX: 500
 };
+/**
+ * Записываем в переменную шаблон верстки карточки;
+ * @type {Element}
+ */
+var cardTemplate = document.querySelector('#card').content.querySelector('article.catalog__card');
+var catalog = document.querySelector('.catalog__cards');
+var basketOrderCount = document.querySelector('.goods__total');
+var totalAmount = 0;
+var totalPrice = 0;
 
 /**
  * Возвращает случайное число в выбранном диапазоне
@@ -180,10 +184,10 @@ var createCardContent = function (allContentsArray) {
  * @param {array} contentsArray
  * @return {object}
  */
-var createCard = function (pic, contentsArray) {
+var createCard = function () {
   return {
     name: cardsData.NAMES[getRandomIntFromRange(0, cardsData.NAMES.length)],
-    picture: 'img/cards/' + pic + '.jpg',
+    picture: 'img/cards/' + cardsData.IMG[getRandomIntFromRange(0, cardsData.IMG.length)] + '.jpg',
     amount: getRandomIntFromRange(AMOUNT.MIN, AMOUNT.MAX),
     price: getRandomIntFromRange(PRICE.MIN, PRICE.MAX),
     weight: getRandomIntFromRange(WEIGHT.MIN, WEIGHT.MAX),
@@ -194,7 +198,7 @@ var createCard = function (pic, contentsArray) {
     nutritionFacts: {
       sugar: cardsData.SUGAR[getRandomIntFromRange(0, cardsData.SUGAR.length)],
       energy: getRandomIntFromRange(ENERGY.MIN, ENERGY.MAX),
-      contents: createCardContent(contentsArray)
+      contents: createCardContent(cardsData.CONTENTS)
     }
   };
 };
@@ -207,19 +211,10 @@ var createCard = function (pic, contentsArray) {
 var createCardsArray = function (itemsNumber) {
   var itemsArray = [];
   for (var i = 0; i < itemsNumber; i++) {
-    itemsArray.push(createCard(cardsData.IMG[i], cardsData.CONTENTS));
+    itemsArray.push(createCard());
   }
-
   return itemsArray;
 };
-
-/**
- * Записываем в переменную шаблон верстки карточки;
- * @type {Element}
- */
-var cardTemplate = document.querySelector('#card').content.querySelector('article.catalog__card');
-
-var catalog = document.querySelector('.catalog__cards');
 
 /**
  * Заполняет шаблон карточки данные и возвращает ноду
@@ -251,7 +246,150 @@ var renderCard = function (card) {
   cardElement.querySelector('.card__characteristic').textContent = (card.nutritionFacts.sugar) ?
     'Содержит сахар' : 'Без сахара';
   cardElement.querySelector('.card__composition-list').textContent = card.nutritionFacts.contents;
+
+  var favButton = cardElement.querySelector('.card__btn-favorite');
+  favButton.addEventListener('click', function () {
+    favButton.classList.toggle('card__btn-favorite--selected');
+  });
+
+  var addToBasketButton = cardElement.querySelector('.card__btn');
+  addToBasketButton.addEventListener('click', function () {
+    addToBasketButton.href = '#basket';
+    addToBasketHandler(card);
+  });
+
   return cardElement;
+};
+/**
+ * Реализуем логику добавления товара в корзину
+ * @param {Node} card
+ */
+var addToBasketHandler = function (card) {
+  var basket = document.querySelector('.goods__cards');
+  var basketEmpty = basket.querySelector('.goods__card-empty');
+  var existingOrders = basket.querySelectorAll('article.card-order');
+  var cardForBasket = renderCardForBasket(card);
+  var isCoincidence = false;
+
+  totalAmount++;
+  totalPrice += card.price;
+  if (existingOrders.length !== 0) {
+    for (var i = 0; i < existingOrders.length; i++) {
+      var title = existingOrders[i].querySelector('.card-order__title').textContent;
+      if (title === card.name && card.amount > 0) {
+        existingOrders[i].querySelector('.card-order__count').value++;
+        existingOrders[i].querySelector('.card-order__price').textContent =
+           card.price * existingOrders[i].querySelector('.card-order__count').value;
+        updateBasketCount(totalAmount, totalPrice);
+        updateAmount(card);
+        isCoincidence = true;
+      }
+    }
+
+    if (!isCoincidence && card.amount > 0) {
+      basket.appendChild(cardForBasket);
+      updateBasketCount(totalAmount, totalPrice);
+      updateAmount(card);
+    }
+
+  } else {
+    basket.appendChild(cardForBasket);
+    basketEmpty.classList.add('visually-hidden');
+    basketOrderCount.classList.remove('visually-hidden');
+    updateBasketCount(totalAmount, totalPrice);
+    updateAmount(card);
+  }
+
+};
+/**
+ * Реализуем логику удаления товара из корзины
+ * @param {Node} card
+ * @param {event} evt
+ */
+var removeFromBasketHandler = function (card, evt) {
+  var cardToRemove = evt.currentTarget.parentNode;
+  var cardOrderData = [];
+  var cardPrice = 0;
+  var cardAmount = 0;
+  for (var i = 0; i < cardToRemove.childNodes.length; i++) {
+    if (cardToRemove.childNodes[i].nodeName.toLowerCase() === 'div' &&
+      cardToRemove.childNodes[i].classList.contains('card-order__main')) {
+      cardOrderData = cardToRemove.childNodes[i].childNodes;
+    }
+  }
+
+  for (var j = 0; j < cardOrderData.length; j++) {
+    if (cardOrderData[j].nodeName.toLowerCase() === 'p'
+      && cardOrderData[j].classList.contains('card-order__price')) {
+      cardPrice = parseInt(cardOrderData[j].textContent.split(' ')[0], 10);
+    }
+    if (cardOrderData[j].nodeName.toLowerCase() === 'div'
+      && cardOrderData[j].classList.contains('card-order__amount')) {
+      cardAmount = parseInt(cardOrderData[j].childNodes[3].childNodes[3].value, 10);
+    }
+  }
+  var basket = document.querySelector('.goods__cards');
+  var existingOrders = basket.querySelectorAll('article.card-order');
+  var basketEmpty = basket.querySelector('.goods__card-empty');
+  totalAmount -= cardAmount;
+  totalPrice -= cardPrice;
+  updateBasketCount(totalAmount, totalPrice);
+  basket.removeChild(card);
+
+  if (existingOrders.length === 1) {
+    basketEmpty.classList.remove('visually-hidden');
+  }
+};
+
+/**
+ * Заполняем данные корзины в шапке страницы актуальеым количеством и стоимостью товаров
+ * @param {number} amount
+ * @param {number} price
+ */
+var updateBasketCount = function (amount, price) {
+  var basketTotal = document.querySelector('.main-header__basket');
+  basketTotal.textContent = 'В корзине ' + amount + ' ' + getCorrentEnding(amount) + ' за ' + price + ' Р.';
+  basketOrderCount.querySelector('.goods__total-count').innerHTML = 'Итого за ' + amount + ' '
+    + getCorrentEnding(amount) + ' <span class="goods__price">' + price + ' ₽</span>';
+};
+/**
+ * Уменьшает количество данного товара на один пункт при добавлении товара в корзину
+ * @param {Node} card
+ * @param {number} amount
+ * @return {number}
+ */
+var updateAmount = function (card) {
+  var updatedAmount = card.amount--;
+  if (updatedAmount < 0) {
+    updatedAmount = 0;
+  }
+  return updatedAmount;
+};
+
+/**
+ * Обрабатываем верное окончание слова "товар" в зависимости от их количества
+ * @param {number} value
+ * @return {string}
+ */
+var getCorrentEnding = function (value) {
+  var itemName = 'товар';
+  switch (value) {
+    case 1:
+      itemName = 'товар';
+      break;
+    case 2:
+      itemName = 'товара';
+      break;
+    case 3:
+      itemName = 'товара';
+      break;
+    case 4:
+      itemName = 'товара';
+      break;
+    default: itemName = 'товаров';
+  }
+
+  return itemName;
 };
 
 /**
@@ -281,7 +419,6 @@ var cardInBasketTemplate = document.querySelector('#card-order').content.querySe
  * Корзина
  * @type {Element}
  */
-var basket = document.querySelector('.goods__cards');
 /**
  * Заполняет шаблон карточки товара в корзине и возвращает ноду карточки
  * @param {object} card
@@ -292,21 +429,44 @@ var renderCardForBasket = function (card) {
   cardInBasket.querySelector('.card-order__title').textContent = card.name;
   cardInBasket.querySelector('.card-order__img').src = card.picture;
   cardInBasket.querySelector('.card-order__price').textContent = card.price + ' ₽';
+
+  var removeFromBasket = cardInBasket.querySelector('.card-order__close');
+  removeFromBasket.addEventListener('click', function (evt) {
+    removeFromBasketHandler(cardInBasket, evt);
+  });
+
   return cardInBasket;
 };
-/**
- * Формируем массив нод-элементов карточек в корзине
- * @type {Array}
- */
-var cardInBasketArray = createCardsArray(ITEMS_IN_BASKET);
-/**
- * Добавляем массив нод-элементов карточек в корзине во фрагмент
- */
-for (var j = 0; j < ITEMS_IN_BASKET; j++) {
-  fragment.appendChild(renderCardForBasket(cardInBasketArray[j]));
-}
-/**
- * Вставляем фрагмент в разметку корзины
- */
-basket.appendChild(fragment);
 
+/**
+ * Реализаия переключения вкладок в форме оформления заказа
+ * @type {Element}
+ */
+var courierDeliveryInput = document.querySelector('#deliver__courier');
+var selfDeliveryInput = document.querySelector('#deliver__store');
+var selfDeliveryBlock = document.querySelector('.deliver__store');
+var courierDeliveryBlock = document.querySelector('.deliver__courier');
+
+courierDeliveryInput.addEventListener('click', function () {
+  selfDeliveryBlock.classList.add('visually-hidden');
+  courierDeliveryBlock.classList.remove('visually-hidden');
+});
+selfDeliveryInput.addEventListener('click', function () {
+  courierDeliveryBlock.classList.add('visually-hidden');
+  selfDeliveryBlock.classList.remove('visually-hidden');
+});
+
+/**
+ * Обработка кликов по пинам слайдера
+ * @type {Element}
+ */
+var leftRangeButton = document.querySelector('.range__btn--left');
+leftRangeButton.addEventListener('click', function () {
+  document.querySelector('.range__price--min').textContent = Math.floor(leftRangeButton.offsetLeft * 100 /
+    leftRangeButton.parentNode.offsetWidth);
+});
+var rightRangeButton = document.querySelector('.range__btn--right');
+rightRangeButton.addEventListener('click', function () {
+  document.querySelector('.range__price--max').textContent = Math.floor(rightRangeButton.offsetLeft * 100 /
+    rightRangeButton.parentNode.offsetWidth);
+});
