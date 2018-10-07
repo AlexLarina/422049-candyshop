@@ -67,12 +67,15 @@
       it.setAttribute('disabled', 'disabled');
     });
   });
-  chooseCardInput.addEventListener('click', function () {
+  var chooseCardHandler = function () {
     cashPaymentMessage.classList.add('visually-hidden');
     cardDataForm.classList.remove('visually-hidden');
     cardDataFormInputs.forEach(function (it) {
       it.removeAttribute('disabled');
     });
+  };
+  chooseCardInput.addEventListener('click', function () {
+    chooseCardHandler();
   });
 
   /**
@@ -228,4 +231,29 @@
       evt.target.setCustomValidity('');
     }
   });
+
+  buyingForm.addEventListener('submit', function (evt) {
+    window.backend.upload(new FormData(buyingForm), successHandler, errorHandler);
+    evt.preventDefault();
+  });
+
+  var successModal = document.querySelector('.modal--success');
+  var errorModal = document.querySelector('.modal--error');
+  var successHandler = function () {
+    successModal.classList.remove('modal--hidden');
+    closeModalHandler(successModal);
+    buyingForm.reset();
+    chooseCardHandler();
+  };
+  var errorHandler = function () {
+    errorModal.classList.remove('modal--hidden');
+    closeModalHandler(errorModal);
+  };
+
+  var closeModalHandler = function (modal) {
+    var closeButton = modal.querySelector('.modal__close');
+    closeButton.addEventListener('click', function () {
+      modal.classList.add('modal--hidden');
+    });
+  };
 })();
