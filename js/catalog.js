@@ -2,33 +2,15 @@
 
 (function () {
   /**
-   * Количество карточек товаров на странице
-   * @type {number}
-   */
-  var ITEMS_NUMBER = 6;
-
-  /**
    * Записываем в переменную шаблон верстки карточки;
    * @type {Element}
    */
   var cardTemplate = document.querySelector('#card').content.querySelector('article.catalog__card');
   var catalog = document.querySelector('.catalog__cards');
+  var catalogWrap = document.querySelector('.catalog__cards-wrap');
   var basketOrderCount = document.querySelector('.goods__total');
   var totalAmount = 0;
   var totalPrice = 0;
-
-  /**
-   * Возвращает массив данных для карточек товаров
-   * @param {number} itemsNumber
-   * @return {Array}
-   */
-  var createCardsArray = function (itemsNumber) {
-    var itemsArray = [];
-    for (var i = 0; i < itemsNumber; i++) {
-      itemsArray.push(window.createCard());
-    }
-    return itemsArray;
-  };
 
   /**
    * Заполняет шаблон карточки данные и возвращает ноду
@@ -44,7 +26,7 @@
       case (card.amount > 0): cardElement.classList.add('card--soon'); break;
     }
     cardElement.querySelector('.card__title').textContent = card.name;
-    cardElement.querySelector('.card__img').src = card.picture;
+    cardElement.querySelector('.card__img').src = 'img/cards/' + card.picture;
     cardElement.querySelector('.card__price').innerHTML =
       card.price + '<span class="card__currency"> ₽</span><span class="card__weight">/ ' + card.weight + ' Г</span>';
     var rating = cardElement.querySelector('.stars__rating');
@@ -210,20 +192,39 @@
    * Формируем массив нод-элементов карточек
    * @type {Array}
    */
-  var cardsArray = createCardsArray(ITEMS_NUMBER);
+  var successModal = document.querySelector('#load-data').content.querySelector('.catalog__load');
+  // var cardsArray = createCardsArray(ITEMS_NUMBER);
+  var errorHandler = function () {
+    alert('Лажа');
+  };
+  var successHandler = function (data) {
+    catalogWrap.appendChild(successModal);
+    console.log(catalog.parentNode.appendChild(successModal));
+    setInterval(function () {
+      successModal.classList.add('visually-hidden');
+    }, 1000);
+    var cardsArray = data.slice();
+    var fragment = document.createDocumentFragment();
+    for (var i = 0; i < cardsArray.length; i++) {
+      fragment.appendChild(renderCard(cardsArray[i]));
+    }
+    catalog.appendChild(fragment);
+  };
 
+  // var cardsArray = window.backend.download(successHandler, errorHandler);
+  window.backend.download(successHandler, errorHandler);
   /**
    * Добавляем массив нод-элементов карточек во фрагмент
    * @type {DocumentFragment}
    */
-  var fragment = document.createDocumentFragment();
+  /* var fragment = document.createDocumentFragment();
   for (var i = 0; i < ITEMS_NUMBER; i++) {
     fragment.appendChild(renderCard(cardsArray[i]));
-  }
+  } */
   /**
    * Вставляем фрагмент в разметку каталога
    */
-  catalog.appendChild(fragment);
+  // catalog.appendChild(fragment);
   /**
    * Шаблон карточки товара в корзине
    * @type {Element}
