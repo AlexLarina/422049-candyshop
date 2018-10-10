@@ -239,6 +239,7 @@
 
   var successModal = document.querySelector('.modal--success');
   var errorModal = document.querySelector('.modal--error');
+
   var successHandler = function () {
     successModal.classList.remove('modal--hidden');
     closeModalHandler(successModal);

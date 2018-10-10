@@ -1,6 +1,7 @@
 'use strict';
 
 (function () {
+  var lastTimeout = null;
   /**
    * Возвращает случайное число в выбранном диапазоне
    * @param {number} min
@@ -11,5 +12,14 @@
     return Math.floor(Math.random() * (max - min)) + min;
   };
 
-  window.getRandomIntFromRange = getRandomIntFromRange;
+  var debounce = function (callback, interval) {
+    if (lastTimeout) {
+      window.clearTimeout(lastTimeout);
+    }
+    lastTimeout = window.setTimeout(callback, interval);
+  };
+
+  // window.getRandomIntFromRange = getRandomIntFromRange;
+  window.debounce = debounce;
+
 })();
