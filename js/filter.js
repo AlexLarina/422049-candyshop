@@ -51,8 +51,6 @@
     var onMouseUp = function (upEvt) {
       upEvt.preventDefault();
       Price.Min = rangeMinPrice.textContent;
-      console.log('rangeMinPrice.textContent = ' + rangeMinPrice.textContent);
-      console.log('Price.Min = ' + Price.Min);
 
       clearCatalog(catalog);
       window.debounce(window.catalog.update, FILTER_SWITCH_DELAY);
@@ -84,8 +82,6 @@
       if (currentX > rightBorder - 10) {
         currentX = rightBorder - 10;
       }
-      console.log('currentX = ' + currentX);
-      console.log('rightBorder = ' + rightBorder);
       if (currentX < leftButtonX + 10) {
         currentX = leftButtonX + 10;
       }
@@ -99,14 +95,10 @@
     var onMouseUp = function (upEvt) {
       upEvt.preventDefault();
       Price.Max = rangeMaxPrice.textContent;
-      // filtrateCards(cards, Price.Min, Price.Max);
-      console.log('rangeMaxPrice.textContent = ' + rangeMaxPrice.textContent);
-      console.log('Price.Max = ' + Price.Max);
 
       clearCatalog(catalog);
       window.debounce(window.catalog.update, FILTER_SWITCH_DELAY);
 
-      // filtrateCards(cards, rangeMinPrice.textContent, rangeMaxPrice.textContent);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };

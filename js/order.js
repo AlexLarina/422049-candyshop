@@ -1,6 +1,7 @@
 'use strict';
 
 (function () {
+  var ESC_KEYCODE = 27;
   /**
    * Реализаия переключения вкладок в форме оформления заказа
    * @type {Element}
@@ -231,7 +232,9 @@
       evt.target.setCustomValidity('');
     }
   });
-
+  /**
+   * Обработка отправки данных на сервер
+   */
   buyingForm.addEventListener('submit', function (evt) {
     window.backend.upload(new FormData(buyingForm), successHandler, errorHandler);
     evt.preventDefault();
@@ -239,22 +242,83 @@
 
   var successModal = document.querySelector('.modal--success');
   var errorModal = document.querySelector('.modal--error');
-
+  /**
+   * Обработка успешной отправки данных на сервер
+   */
   var successHandler = function () {
     successModal.classList.remove('modal--hidden');
-    closeModalHandler(successModal);
+    clickCloseModalHandler(successModal);
     buyingForm.reset();
     chooseCardHandler();
   };
+  /**
+   * Обработка ошибки отправки данных
+   */
   var errorHandler = function () {
     errorModal.classList.remove('modal--hidden');
-    closeModalHandler(errorModal);
+    clickCloseModalHandler(errorModal);
   };
-
-  var closeModalHandler = function (modal) {
+  /**
+   * Обработка закрытия модального окна по клику
+   * @param {Node} modal
+   */
+  var clickCloseModalHandler = function (modal) {
     var closeButton = modal.querySelector('.modal__close');
     closeButton.addEventListener('click', function () {
       modal.classList.add('modal--hidden');
     });
   };
+  /**
+   * Обработка закрытия модального окна по нажатию на ESC
+   * @param {Event} evt
+   */
+  var keyCloseModalHandler = function (evt) {
+    var modals = document.querySelectorAll('.modal');
+    if (evt.keyCode === ESC_KEYCODE) {
+      modals.forEach(function (modal) {
+        modal.classList.add('modal--hidden');
+      });
+    }
+  };
+
+  document.addEventListener('keydown', function (evt) {
+    keyCloseModalHandler(evt);
+  });
+
+  var stores = document.querySelector('.deliver__stores');
+  /**
+   * Обработка загрузки новой карты при переключении пунктов выдачи в форме
+   */
+  var updateMap = function () {
+    var map = document.querySelector('.deliver__store-map-wrap img');
+    var choosenStore = stores.querySelector('input[type=radio]:checked');
+    map.src = 'img/map/' + choosenStore.value + '.jpg';
+  };
+
+  stores.addEventListener('change', function () {
+    updateMap();
+  });
+
+  var disableWholeOrder = function () {
+    var order = document.querySelector('#order');
+    var inputs = order.querySelectorAll('input');
+    inputs.forEach(function (it) {
+      it.setAttribute('disabled', 'disabled');
+    });
+  };
+
+  var inableWholeOrder = function () {
+    var order = document.querySelector('#order');
+    var inputs = order.querySelectorAll('input');
+    inputs.forEach(function (it) {
+      it.removeAttribute('disabled');
+    });
+  };
+  disableWholeOrder();
+  window.order = {
+    disableOrder: disableWholeOrder,
+    inableOrder: inableWholeOrder,
+    clickCloseModalHandler: clickCloseModalHandler
+  };
+
 })();

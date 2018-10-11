@@ -19,7 +19,7 @@
     lastTimeout = window.setTimeout(callback, interval);
   };
 
-  // window.getRandomIntFromRange = getRandomIntFromRange;
+  window.getRandomIntFromRange = getRandomIntFromRange;
   window.debounce = debounce;
 
 })();
