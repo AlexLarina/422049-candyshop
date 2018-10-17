@@ -2,6 +2,10 @@
 
 (function () {
   var FILTER_SWITCH_DELAY = 1000;
+  var INITIAL_PRICE = {
+    Min: 0,
+    Max: 0
+  };
   var Price = {
     Min: 0,
     Max: 0
@@ -12,6 +16,7 @@
    */
   var leftRangeButton = document.querySelector('.range__btn--left');
   var rightRangeButton = document.querySelector('.range__btn--right');
+  var priceRangeFillLine = document.querySelector('.range__fill-line');
   var rangeMinPrice = document.querySelector('.range__price--min');
   var rangeMaxPrice = document.querySelector('.range__price--max');
   var filters = document.querySelector('.catalog__sidebar');
@@ -38,8 +43,8 @@
       if (currentX < 0) {
         currentX = 0;
       }
-      if (currentX > rightButtonX - 10) {
-        currentX = rightButtonX - 10;
+      if (currentX > rightButtonX) {
+        currentX = rightButtonX;
       }
 
       leftRangeButton.style.left = currentX + 'px';
@@ -82,8 +87,8 @@
       if (currentX > rightBorder - 10) {
         currentX = rightBorder - 10;
       }
-      if (currentX < leftButtonX + 10) {
-        currentX = leftButtonX + 10;
+      if (currentX < leftButtonX) {
+        currentX = leftButtonX;
       }
 
       rightRangeButton.style.left = currentX + 'px';
@@ -196,6 +201,9 @@
       }
     });
 
+    INITIAL_PRICE.Min = Price.Min;
+    INITIAL_PRICE.Max = Price.Max;
+
     return Price.Max;
   };
   /**
@@ -236,6 +244,8 @@
   showAllBtn.addEventListener('click', function (evt) {
     evt.preventDefault();
     isShowAll = true;
+
+    resetPrice();
     filters.querySelector('form').reset();
     window.debounce(window.catalog.update, FILTER_SWITCH_DELAY);
   });
@@ -260,16 +270,11 @@
       return filter.name === 'mark';
     });
 
-    var sortFilters = Array.prototype.filter.call(checkedFilters, function (filter) {
-      return filter.name === 'sort';
-    });
-
     var temp = [];
     foodTypeFilters.forEach(function (currentFilter) {
       temp = filterByFoodType(cards, currentFilter);
       Array.prototype.push.apply(filteredCardsArray, temp);
     });
-
     foodPropertiesFilters.forEach(function (currentFilter) {
       temp = (filteredCardsArray.length === 0) ? filterByFoodProperty(cards, currentFilter) :
         filterByFoodProperty(filteredCardsArray, currentFilter);
@@ -283,34 +288,56 @@
     markFilters.forEach(function (currentFilter) {
       if (currentFilter.id === 'filter-availability') {
         filteredCardsArray = filterInStock(cards);
+        resetPrice();
         filters.querySelector('form').reset();
       }
 
       if (currentFilter.id === 'filter-favorite') {
         filteredCardsArray = window.catalog.favouriteCards;
+        resetPrice();
         filters.querySelector('form').reset();
-      }
-    });
-
-    sortFilters.forEach(function (currentFilter) {
-      if (currentFilter.id === 'filter-expensive') {
-        filteredCardsArray = sortByPriceDescrease(cards);
-      }
-
-      if (currentFilter.id === 'filter-cheep') {
-        filteredCardsArray = sortByPriceInscrease(cards);
-      }
-
-      if (currentFilter.id === 'filter-rating') {
-        filteredCardsArray = sortByRate(cards);
       }
     });
 
     if (isShowAll) {
       filteredCardsArray = cards;
+      isShowAll = false;
+      resetPrice();
+      filters.querySelector('form').reset();
     }
-
     return filteredCardsArray;
+  };
+  /**
+   * Сортируем карточки товаров
+   * @param {Array} filtered
+   * @return {Array}
+   */
+  var sortCards = function (filtered) {
+    var sortedArray = [];
+    var checkedFilters = filters.querySelectorAll('input[type="checkbox"]:checked, input[type="radio"]:checked');
+    var sortFilters = Array.prototype.filter.call(checkedFilters, function (filter) {
+      return filter.name === 'sort';
+    });
+
+    sortFilters.forEach(function (currentFilter) {
+      if (currentFilter.id === 'filter-popular') {
+        sortedArray = sortByPopularity(filtered);
+      }
+
+      if (currentFilter.id === 'filter-expensive') {
+        sortedArray = sortByPriceDescrease(filtered);
+      }
+
+      if (currentFilter.id === 'filter-cheep') {
+        sortedArray = sortByPriceInscrease(filtered);
+      }
+
+      if (currentFilter.id === 'filter-rating') {
+        sortedArray = sortByRate(filtered);
+      }
+    });
+
+    return sortedArray;
   };
 
   /**
@@ -345,9 +372,7 @@
    */
   var filterByPrice = function (cards, min, max) {
     return cards.filter(function (card) {
-      // alert('Фильтруем по цене!');
       return card.price >= min && card.price <= max;
-      // return card.price >= min;
     });
   };
   /**
@@ -366,7 +391,8 @@
    * @return {Array} sorted Array
    */
   var sortByPriceDescrease = function (cards) {
-    return cards.sort(function (a, b) {
+    var sortedCards = cards.slice();
+    return sortedCards.sort(function (a, b) {
       return b.price - a.price;
     });
   };
@@ -376,8 +402,9 @@
    * @return {Array} sorted Array
    */
   var sortByRate = function (cards) {
-    return cards.sort(function (a, b) {
-      return b.rating.value - a.rating.value;
+    var sortedCards = cards.slice();
+    return sortedCards.sort(function (a, b) {
+      return (b.rating.value - a.rating.value) || (b.rating.number - a.rating.number);
     });
   };
   /**
@@ -386,9 +413,19 @@
    * @return {Array} sorted Array
    */
   var sortByPriceInscrease = function (cards) {
-    return cards.sort(function (a, b) {
+    var sortedCards = cards.slice();
+    return sortedCards.sort(function (a, b) {
       return a.price - b.price;
     });
+  };
+  /**
+   * При выборе фильтра "Сначала популярные" возвращаем карточки в том порядке, что получили с сервера
+   * @param {Array} cards
+   * @return {Array} sorted Array
+   */
+  var sortByPopularity = function (cards) {
+    var sortedCards = cards.slice();
+    return sortedCards;
   };
   /**
    * Очистка каталога
@@ -409,10 +446,26 @@
   });
   /**
    * Отрисовка сообщения об ошибке для слишком строгих фильтров
+   * @param {Node} errorMessage
    */
-  var renderFilterError = function () {
-    var errorTemplate = document.querySelector('#empty-filters').content.querySelector('.catalog__empty-filter');
-    catalog.appendChild(errorTemplate);
+  var renderFilterError = function (errorMessage) {
+    catalog.appendChild(errorMessage);
+  };
+  /**
+   * Устанавливаем фильтры по цене в исходное состояние
+   */
+  var resetPrice = function () {
+    leftRangeButton.style.left = 0;
+
+    rightRangeButton.style.left = '';
+
+    priceRangeFillLine.style.left = 0;
+    priceRangeFillLine.style.right = 0;
+
+    rangeMinPrice.textContent = INITIAL_PRICE.Min;
+    rangeMaxPrice.textContent = INITIAL_PRICE.Max;
+    Price.Min = INITIAL_PRICE.Min;
+    Price.Max = INITIAL_PRICE.Max;
   };
 
   window.filter = {
@@ -420,7 +473,7 @@
     render: renderFilterCount,
     cards: filtrateCards,
     error: renderFilterError,
-    renderFav: renderFavCount
+    renderFav: renderFavCount,
+    sortCards: sortCards
   };
-
 })();

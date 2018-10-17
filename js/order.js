@@ -11,6 +11,7 @@
   var selfDeliveryInput = buyingForm.querySelector('#deliver__store');
   var selfDeliveryBlock = buyingForm.querySelector('.deliver__store');
   var courierDeliveryBlock = buyingForm.querySelector('.deliver__courier');
+  var cardStatus = buyingForm.querySelector('.payment__card-status');
   /**
    * Делаем неактивными все инпуты в выбранном блоке
    * @param {Node} element
@@ -30,27 +31,35 @@
     });
   };
   /**
-   * По умолчанию инпуты в блкое курьеской доставки выключены
-   */
-  disableInputs(courierDeliveryBlock);
-  /**
    * Обрабатываем показ вкладки с курьерской доставкой
    */
   courierDeliveryInput.addEventListener('click', function () {
+    courierDeliveryInputHandler();
+  });
+  /**
+   * Обработчик кнопки курьерской доставки
+   */
+  var courierDeliveryInputHandler = function () {
     selfDeliveryBlock.classList.add('visually-hidden');
     enableInputs(courierDeliveryBlock);
     disableInputs(selfDeliveryBlock);
     courierDeliveryBlock.classList.remove('visually-hidden');
-  });
+  };
   /**
    * Обрабатываем показ вкладки с самовывозом
    */
   selfDeliveryInput.addEventListener('click', function () {
+    selfDeliveryInputHandler();
+  });
+  /**
+   * Обработчик кнопки доставки самовывозом
+   */
+  var selfDeliveryInputHandler = function () {
     courierDeliveryBlock.classList.add('visually-hidden');
     enableInputs(selfDeliveryBlock);
     disableInputs(courierDeliveryBlock);
     selfDeliveryBlock.classList.remove('visually-hidden');
-  });
+  };
 
   /**
    * Выбор способа оплаты
@@ -61,6 +70,9 @@
   var cardDataForm = buyingForm.querySelector('.payment__card-wrap');
   var cardDataFormInputs = cardDataForm.querySelectorAll('input');
 
+  /**
+   * Обработчик выбора наличных как способа оплаты
+   */
   chooseCashInput.addEventListener('click', function () {
     cardDataForm.classList.add('visually-hidden');
     cashPaymentMessage.classList.remove('visually-hidden');
@@ -68,6 +80,9 @@
       it.setAttribute('disabled', 'disabled');
     });
   });
+  /**
+   * Обработчик выбора карты как способа оплаты
+   */
   var chooseCardHandler = function () {
     cashPaymentMessage.classList.add('visually-hidden');
     cardDataForm.classList.remove('visually-hidden');
@@ -103,8 +118,8 @@
    * @return {boolean}
    */
   function validateCardNumber(numbers) {
-    var multipledOdds = numbers.split('').map(function (it) {
-      return (it % 2 === 0) ? parseInt(it, 10) : it * 2;
+    var multipledOdds = numbers.split('').map(function (it, index) {
+      return (index % 2 !== 0) ? parseInt(it, 10) : it * 2;
     });
     var decreasedNumbers = multipledOdds.map(function (it) {
       return (it >= 10) ? it - 9 : it;
@@ -143,7 +158,7 @@
    */
   var emailInput = buyingForm.querySelector('#contact-data__email');
   emailInput.addEventListener('input', function (evt) {
-    if (!validateEmail(evt.target.value)) {
+    if (!validateEmail(evt.target.value) && evt.target.value !== '') {
       evt.target.setCustomValidity('Укажите корректный e-mail.');
     } else {
       evt.target.setCustomValidity('');
@@ -165,7 +180,7 @@
       target.setCustomValidity('Некорректный номер карты');
     } else {
       isCardNumberValid = true;
-      changeCardStatus();
+      confirmCardStatus();
       target.setCustomValidity('');
     }
   });
@@ -179,7 +194,7 @@
       evt.target.setCustomValidity('Укажите корректную дату.');
     } else {
       isCardDateValid = true;
-      changeCardStatus();
+      confirmCardStatus();
       evt.target.setCustomValidity('');
     }
   });
@@ -193,7 +208,7 @@
       evt.target.setCustomValidity('Укажите корректный CVC код.');
     } else {
       isCardCVCValid = true;
-      changeCardStatus();
+      confirmCardStatus();
       evt.target.setCustomValidity('');
     }
   });
@@ -207,18 +222,21 @@
       evt.target.setCustomValidity('Укажите корректное имя.');
     } else {
       isCardNameValid = true;
-      changeCardStatus();
+      confirmCardStatus();
       evt.target.setCustomValidity('');
     }
   });
   /**
    * Изменение статуса карты при верном/неверном заполнении полей карты
    */
-  var changeCardStatus = function () {
-    var cardStatus = cardDataForm.querySelector('.payment__card-status');
+  var confirmCardStatus = function () {
     if (isCardNumberValid && isCardDateValid && isCardCVCValid && isCardNameValid) {
       cardStatus.textContent = 'Одобрен';
     }
+  };
+
+  var rejectCardStatus = function () {
+    cardStatus.textContent = 'Не определен';
   };
   /**
    * Обработка ввода данных в поле Этаж
@@ -226,7 +244,7 @@
    */
   var floor = document.querySelector('#deliver__floor');
   floor.addEventListener('change', function (evt) {
-    if (!validateFloor(evt.target.value)) {
+    if (!validateFloor(evt.target.value) && evt.target.value !== '') {
       evt.target.setCustomValidity('Этаж должен быть числом.');
     } else {
       evt.target.setCustomValidity('');
@@ -249,7 +267,9 @@
     successModal.classList.remove('modal--hidden');
     clickCloseModalHandler(successModal);
     buyingForm.reset();
+    rejectCardStatus();
     chooseCardHandler();
+    selfDeliveryInputHandler();
   };
   /**
    * Обработка ошибки отправки данных
@@ -298,7 +318,9 @@
   stores.addEventListener('change', function () {
     updateMap();
   });
-
+  /**
+   * Блокирование всех полей формы заказа
+   */
   var disableWholeOrder = function () {
     var order = document.querySelector('#order');
     var inputs = order.querySelectorAll('input');
@@ -306,13 +328,17 @@
       it.setAttribute('disabled', 'disabled');
     });
   };
-
+  /**
+   * Разблокирование всех полей формы заказа
+   */
   var inableWholeOrder = function () {
     var order = document.querySelector('#order');
     var inputs = order.querySelectorAll('input');
     inputs.forEach(function (it) {
       it.removeAttribute('disabled');
     });
+
+    disableInputs(courierDeliveryBlock);
   };
   disableWholeOrder();
   window.order = {

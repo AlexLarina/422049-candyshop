@@ -2,7 +2,6 @@
 
 (function () {
   var DATA_URL = 'https://js.dump.academy/candyshop';
-
   /**
    * Формируем запрос на сервер
    * @param {function} onLoad
@@ -19,7 +18,6 @@
         onError(xhr.response);
       }
     });
-
     return xhr;
   };
   /**
